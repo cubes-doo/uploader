@@ -1,0 +1,24 @@
+{
+    "name": "cubes-doo/uploader",
+    "description": "Uploader library for file chunking and upload with bridge for Resumable.js javascript library.",
+    "homepage": "https://github.com/cubes-doo/uploader",
+    "type": "library",
+    "license": "GPL",
+    "authors": [
+        {
+            "name": "Djordje Stojiljkovic",
+            "email": "djordje.stojiljkovic@cubes.rs"
+        }
+    ],
+    "require": {
+        "php": ">=5.4",
+        "symfony/filesystem": "^3.3",
+        "symfony/finder": "^3.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cubes\\Uploader\\": "src/"
+        }
+    }
+}
+
