@@ -96,6 +96,13 @@ class Uploader implements ComponentInterface
     protected $finalFileName;
 
     /**
+     * Identification for returning RAW response data array for later modifications.
+     *
+     * @var bool
+     */
+    protected $rawResponse = false;
+
+    /**
      * AbstractUploader constructor.
      *
      * @param  string $tmpDirectory      | Temporary directory where every chunk will be stored.
@@ -219,11 +226,11 @@ class Uploader implements ComponentInterface
         if ($this->isUploaded($fileName, $identifier, $chunkSize, $totalSize)) {
             $finishedStatus = $this->make($identifier, $fileName);
             if ($finishedStatus) {
-                return $this->getResponse()->send(201);
+                return $this->getResponse()->send(201, $this->responseRawOrFalse());
             }
         }
 
-        return $this->getResponse()->send(201);
+        return $this->getResponse()->send(201, $this->responseRawOrFalse());
     }
 
     /**
@@ -245,10 +252,10 @@ class Uploader implements ComponentInterface
             $handler->getIdentifier(),
             $handler->getFilename(),
             $handler->getChunkNumber())) {
-            return $this->getResponse()->send(204);
+            return $this->getResponse()->send(204, $this->responseRawOrFalse());
         }
 
-        return $this->getResponse()->send(200);
+        return $this->getResponse()->send(200, $this->responseRawOrFalse());
     }
 
     /**
@@ -271,6 +278,7 @@ class Uploader implements ComponentInterface
         if ($this->merge($this->finder, $finalFileName)) {
             $this->fs->remove($tmpChunkDirectory);
             if ($this->fs->exists($finalFileName)) {
+                $this->getResponse()->setContent('message', 'success');
                 $status = true;
             }
         }
@@ -316,8 +324,14 @@ class Uploader implements ComponentInterface
         // If mime type of file is not allowed
         if (!$this->isMimeAllowed($finalFile)) {
             $this->fs->remove($finalFile);
+            foreach ($chunkFiles as $chunkFile) {
+                $this->fs->remove($chunkFile);
+            }
             throw new \Exception('Uploaded file mime type is not allowed.');
         }
+
+        // Add final file name & path to Response data
+        $this->getResponse()->setResponseData('absolute_filepath', $finalFile);
 
         // Return status true/false.
         $status = $this->fs->exists($finalFile);
@@ -358,10 +372,24 @@ class Uploader implements ComponentInterface
             $oldFilePath = $finalFile;
             $finalFile   = substr($finalFile, strrpos($finalFile, '/') + 1);
             $finalFile   = str_replace($finalFile, '', $oldFilePath);
+            $lastFileNamePart = $finalFileName .'.'. $finalFileExt;
+            $this->getResponse()->setResponseData('filename', $lastFileNamePart);
             return $finalFile . $finalFileName .'.'. $finalFileExt;
         }
 
+        $this->getResponse()->setResponseData('filename', $finalFileName .'.'. $finalFileExt);
         return $finalFile . $finalFileExt;
+    }
+
+    /**
+     * Method sort used as closure to sort chunked files by natsort compare so
+     * we don't have conflict when merging files because of incorrect file order.
+     */
+    protected function sort()
+    {
+        return function (\SplFileInfo $a, \SplFileInfo $b) {
+            return strnatcmp($a->getRealPath(), $b->getRealPath());
+        };
     }
 
     /**
@@ -394,17 +422,6 @@ class Uploader implements ComponentInterface
             throw new \Exception('finfo extension is not enabled on your server.');
         }
 
-    }
-
-    /**
-     * Method sort used as closure to sort chunked files by natsort compare so
-     * we don't have conflict when merging files because of incorrect file order.
-     */
-    protected function sort()
-    {
-        return function (\SplFileInfo $a, \SplFileInfo $b) {
-            return strnatcmp($a->getRealPath(), $b->getRealPath());
-        };
     }
 
     /**
@@ -679,5 +696,25 @@ class Uploader implements ComponentInterface
     {
         $this->finalFileName = $finalFileName;
         return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function getRawResponse()
+    {
+        $this->rawResponse = true;
+        return $this;
+    }
+
+    /**
+     * @return bool|Uploader
+     */
+    public function responseRawOrFalse()
+    {
+        if ($this->rawResponse) {
+            return $this->getRawResponse();
+        }
+        return false;
     }
 }
