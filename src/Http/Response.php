@@ -35,41 +35,38 @@ class Response implements ResponseInterface
             return $this->getContent();
         }
 
-        // Send regular Laravel response object.
+        // Send response data.
+        $data = $this->getContent();
         switch ($code):
             case 200:
                 header(self::CODE_200);
-                return response([
-                    'message' => 'OK',
-                    $this->getResponseData()
-                ], $code);
+                $data['code'] = self::CODE_200;
+                $data['message'] = 'OK';
+                return $data;
                 break;
             case 201:
                 header(self::CODE_201);
-                return response([
-                    'message' => 'OK',
-                    $this->getResponseData()
-                ], $code);
+                $data['code'] = self::CODE_201;
+                $data['message'] = 'OK';
+                return $data;
                 break;
             case 204:
-                return response([
-                    'message' => 'Chunk not found',
-                    $this->getResponseData()
-                ], $code);
+                header(self::CODE_204);
+                $data['code'] = self::CODE_204;
+                $data['message'] = 'Chunk not found.';
+                return $data;
                 break;
             case 404:
                 header(self::CODE_404);
-                return response([
-                    'message' => 'An error occurred',
-                    $this->getResponseData()
-                ], $code);
+                $data['code'] = self::CODE_404;
+                $data['message'] = 'An error occurred.';
+                return $data;
                 break;
             default:
                 header(self::CODE_404);
-                return response([
-                    'message' => 'An error occurred',
-                    $this->getResponseData()
-                ], $code);
+                $data['code'] = self::CODE_404;
+                $data['message'] = 'An error occurred.';
+                return $data;
         endswitch;
     }
 

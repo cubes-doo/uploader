@@ -377,7 +377,10 @@ class Uploader implements ComponentInterface
             return $finalFile . $finalFileName .'.'. $finalFileExt;
         }
 
-        $this->getResponse()->setResponseData('filename', $finalFileName .'.'. $finalFileExt);
+        $this->getResponse()->setResponseData(
+            'filename', str_replace($this->getUploadDirectory(), '', $finalFile). $finalFileExt
+        );
+
         return $finalFile . $finalFileExt;
     }
 
@@ -421,7 +424,6 @@ class Uploader implements ComponentInterface
         } else {
             throw new \Exception('finfo extension is not enabled on your server.');
         }
-
     }
 
     /**
